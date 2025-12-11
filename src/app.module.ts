@@ -12,11 +12,35 @@ import { CommentModule } from './modules/comment/comment.module';
   imports: [
     ConfigModule.forRoot({
       validationSchema: Joi.object({
-        POSTGRES_USER: Joi.string().required(),
-        POSTGRES_PASSWORD: Joi.string().required(),
-        POSTGRES_HOST: Joi.string().required(),
-        POSTGRES_PORT: Joi.number().required(),
+        // Railway provides DATABASE_URL, local dev uses individual vars
+        DATABASE_URL: Joi.string().optional(),
+        POSTGRES_USER: Joi.string().when('DATABASE_URL', {
+          is: Joi.exist(),
+          then: Joi.optional(),
+          otherwise: Joi.required(),
+        }),
+        POSTGRES_PASSWORD: Joi.string().when('DATABASE_URL', {
+          is: Joi.exist(),
+          then: Joi.optional(),
+          otherwise: Joi.required(),
+        }),
+        POSTGRES_HOST: Joi.string().when('DATABASE_URL', {
+          is: Joi.exist(),
+          then: Joi.optional(),
+          otherwise: Joi.required(),
+        }),
+        POSTGRES_PORT: Joi.number().when('DATABASE_URL', {
+          is: Joi.exist(),
+          then: Joi.optional(),
+          otherwise: Joi.required(),
+        }),
+        POSTGRES_DB: Joi.string().when('DATABASE_URL', {
+          is: Joi.exist(),
+          then: Joi.optional(),
+          otherwise: Joi.optional(),
+        }),
         NODE_ENV: Joi.string().default('dev'),
+        PORT: Joi.number().optional(),
       }),
       isGlobal: true,
     }),
