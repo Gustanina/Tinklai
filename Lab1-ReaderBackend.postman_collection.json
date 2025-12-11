@@ -1,0 +1,694 @@
+{
+  "info": {
+    "_postman_id": "a9a7f0e2-9a0f-4e6f-a6a9-ptasks-comments-e2e",
+    "name": "Nest Tasks API – E2E",
+    "description": "End-to-end tests for Projects, Tasks, and Comments (NestJS + TypeORM).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "projectId1", "value": "" },
+    { "key": "projectId2", "value": "" },
+    { "key": "taskId", "value": "" },
+    { "key": "commentId", "value": "" },
+    { "key": "nonexistentId", "value": "999999" }
+  ],
+  "item": [
+    {
+      "name": "0. Healthcheck (optional)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/", "host": ["{{baseUrl}}"], "path": [""] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Server reachable', function () {",
+              "  pm.expect(pm.response.code).to.be.within(200, 499);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Projects – Create #1",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/projects",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Reader Backend\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const rnd = Math.floor(Math.random()*100000);",
+              "pm.variables.set('projTitle1', `Reader Backend ${rnd}`);",
+              "pm.request.body.update(JSON.stringify({ title: pm.variables.get('projTitle1') }, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.test('Project shape', () => {",
+              "  pm.expect(json).to.have.property('id');",
+              "  pm.expect(json).to.have.property('title');",
+              "});",
+              "pm.environment.set('projectId1', json.id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Projects – Create #2",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/projects",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Ancillary Project\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const rnd = Math.floor(Math.random()*100000);",
+              "pm.variables.set('projTitle2', `Ancillary Project ${rnd}`);",
+              "pm.request.body.update(JSON.stringify({ title: pm.variables.get('projTitle2') }, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('projectId2', json.id);",
+              "pm.test('IDs distinct', () => pm.expect(pm.environment.get('projectId1')).to.not.eql(String(json.id)));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Projects – List (pagination)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Has data + meta', () => {",
+              "  pm.expect(json).to.have.property('data').that.is.an('array');",
+              "  pm.expect(json).to.have.property('meta');",
+              "  pm.expect(json.meta).to.have.keys(['total','page','limit']);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Projects – Get one",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId1}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects", "{{projectId1}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Correct ID', () => pm.expect(json.id).to.eql(Number(pm.environment.get('projectId1'))));",
+              "pm.test('Has title', () => pm.expect(json).to.have.property('title'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Projects – Update title",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId1}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects", "{{projectId1}}"]
+        },
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated title\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "pm.request.body.update(JSON.stringify({ title: pm.variables.get('projTitle1') + ' (updated)' }, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Title updated', () => pm.expect(json.title).to.include('(updated)'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Tasks – Create (attach to projectId1)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/tasks",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Prepare lab demo\",\n  \"projectId\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const payload = {",
+              "  title: `Prepare lab demo ${Date.now()}` ,",
+              "  projectId: Number(pm.environment.get('projectId1'))",
+              "};",
+              "pm.request.body.update(JSON.stringify(payload, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('taskId', json.id);",
+              "pm.test('Status is valid', () => pm.expect(['TODO','IN_PROGRESS','DONE']).to.include(json.status));",
+              "pm.test('Has project relation', () => {",
+              "  pm.expect(json).to.have.property('project');",
+              "  pm.expect(json.project).to.have.property('id');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Tasks – Get one",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{taskId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{taskId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('IDs match', () => pm.expect(json.id).to.eql(Number(pm.environment.get('taskId'))));",
+              "pm.test('Has project in response', () => pm.expect(json).to.have.property('project'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Tasks – List (all)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/tasks?page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"],
+          "query": [
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Has data+meta', () => {",
+              "  pm.expect(json).to.have.property('data').that.is.an('array');",
+              "  pm.expect(json).to.have.property('meta');",
+              "});",
+              "pm.test('Each task includes project', () => {",
+              "  json.data.forEach(t => pm.expect(t).to.have.property('project'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Tasks – List (filter by projectId1)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/tasks?projectId={{projectId1}}&page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks"],
+          "query": [
+            { "key": "projectId", "value": "{{projectId1}}" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('All tasks belong to projectId1', () => {",
+              "  json.data.forEach(t => pm.expect(t.project.id).to.eql(Number(pm.environment.get('projectId1'))));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "10. Tasks – Update status (/status)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{taskId}}/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{taskId}}", "status"]
+        },
+        "body": { "mode": "raw", "raw": "{\n  \"status\": \"IN_PROGRESS\"\n}" }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Status updated', () => pm.expect(json.status).to.eql('IN_PROGRESS'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "11. Tasks – Patch (title + move to projectId2)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{taskId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{taskId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Prepare final lab demo\",\n  \"projectId\": 2\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const payload = {",
+              "  title: `Prepare final lab demo ${Date.now()}`,",
+              "  projectId: Number(pm.environment.get('projectId2'))",
+              "};",
+              "pm.request.body.update(JSON.stringify(payload, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Moved to project2', () => pm.expect(json.project.id).to.eql(Number(pm.environment.get('projectId2'))));",
+              "pm.test('Title updated', () => pm.expect(json.title).to.match(/Prepare final lab demo/));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "12. Tasks – 404 on non-existent",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{nonexistentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{nonexistentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "13. Comments – Create for task",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Puiku, galima merginti.\",\n  \"taskId\": 1\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const payload = {",
+              "  content: `Ši užduotis atrodo gerai. ${Date.now()}` ,",
+              "  taskId: Number(pm.environment.get('taskId'))",
+              "};",
+              "pm.request.body.update(JSON.stringify(payload, null, 2));"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('201 Created', () => pm.response.to.have.status(201));",
+              "const json = pm.response.json();",
+              "pm.environment.set('commentId', json.id);",
+              "pm.test('Has nested task + project', () => {",
+              "  pm.expect(json).to.have.property('task');",
+              "  pm.expect(json.task).to.have.property('project');",
+              "});",
+              "pm.test('Content present', () => pm.expect(json.content).to.be.a('string').and.not.empty);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "14. Comments – List (filter by taskId)",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/comments?taskId={{taskId}}&page=1&limit=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments"],
+          "query": [
+            { "key": "taskId", "value": "{{taskId}}" },
+            { "key": "page", "value": "1" },
+            { "key": "limit", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Has data + meta', () => {",
+              "  pm.expect(json).to.have.property('data').that.is.an('array');",
+              "  pm.expect(json).to.have.property('meta');",
+              "});",
+              "pm.test('All comments belong to taskId', () => {",
+              "  json.data.forEach(c => pm.expect(c.task.id).to.eql(Number(pm.environment.get('taskId'))));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "15. Comments – Get one",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments", "{{commentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('IDs match', () => pm.expect(json.id).to.eql(Number(pm.environment.get('commentId'))));",
+              "pm.test('Nested task.project exists', () => pm.expect(json.task).to.have.property('project'));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "16. Comments – Update content",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments", "{{commentId}}"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Atnaujinta pastaba.\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('200 OK', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.test('Content updated', () => pm.expect(json.content).to.match(/Atnaujinta|Ši/));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "17. Comments – 404 when task does not exist",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": {
+          "raw": "{{baseUrl}}/comments",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"content\": \"Invalid\",\n  \"taskId\": 999999\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('404 Not Found', () => pm.response.to.have.status(404));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "18. Comments – Delete",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/comments/{{commentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["comments", "{{commentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "19. Tasks – Delete",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/tasks/{{taskId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["tasks", "{{taskId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "20. Projects – Delete #1",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId1}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects", "{{projectId1}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    },
+    {
+      "name": "21. Projects – Delete #2",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{baseUrl}}/projects/{{projectId2}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["projects", "{{projectId2}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ]
+    }
+  ]
+}

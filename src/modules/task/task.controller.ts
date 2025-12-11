@@ -23,6 +23,7 @@ import { CreateTaskDto } from './Dto/create-task.dto';
 import { UpdateStatusDto } from './Dto/update-status.dto';
 import { ListTasksQueryDto } from './Dto/list-tasks.query';
 import { Task } from './task.entity';
+import { UpdateTaskDto } from './Dto/update-task.dto';
 
 @ApiTags('tasks')
 @Controller('tasks')
@@ -64,5 +65,13 @@ export class TaskController {
   @ApiNotFoundResponse()
   async remove(@Param('id') id: string) {
     await this.service.delete(Number(id));
+  }
+
+  // NEW: update multiple fields (title/status/projectId)
+  @Patch(':id')
+  @ApiOperation({ summary: 'Update task (title / status / projectId)' })
+  @ApiOkResponse({ type: Task })
+  update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
+    return this.service.update(Number(id), dto);
   }
 }

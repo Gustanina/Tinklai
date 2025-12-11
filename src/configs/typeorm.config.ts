@@ -16,23 +16,37 @@ export const createTypeOrmOptions = (
 ): DataSourceOptions => {
   const isDev =
     (configService?.get<string>('NODE_ENV') ?? process.env.NODE_ENV) === 'dev';
-  console.log(
-    'password',
-    configService?.get<string>('POSTGRES_PASSWORD') ??
-      process.env.POSTGRES_PASSWORD,
-  );
-  console.log(
-    'user',
-    configService?.get<string>('POSTGRES_USER') ?? process.env.POSTGRES_USER,
-  );
-  console.log(
-    'host',
-    configService?.get<string>('POSTGRES_HOST') ?? process.env.POSTGRES_HOST,
-  );
-  console.log(
-    'port',
-    configService?.get<number>('POSTGRES_PORT') ?? process.env.POSTGRES_PORT,
-  );
+  const isProd =
+    (configService?.get<string>('NODE_ENV') ?? process.env.NODE_ENV) ===
+    'production';
+
+  // Support DATABASE_URL (used by Railway, Render, Heroku, etc.)
+  const databaseUrl =
+    configService?.get<string>('DATABASE_URL') ?? process.env.DATABASE_URL;
+
+  // If DATABASE_URL is provided, parse it (Railway provides this)
+  if (databaseUrl) {
+    const url = new URL(databaseUrl);
+    return {
+      type: 'postgres',
+      host: url.hostname,
+      port: parseInt(url.port, 10) || 5432,
+      username: url.username,
+      password: url.password,
+      database: url.pathname.slice(1), // Remove leading '/'
+      ssl: isProd
+        ? {
+            rejectUnauthorized: false,
+          }
+        : false,
+      entities,
+      migrations: [],
+      synchronize: isDev, // false in production, but Railway can use true for simplicity
+      logging: isDev,
+    };
+  }
+
+  // Otherwise use individual environment variables (for local development)
   return {
     type: 'postgres',
     host:
@@ -49,7 +63,7 @@ export const createTypeOrmOptions = (
       configService?.get<string>('POSTGRES_DB') ?? process.env.POSTGRES_DB,
     ssl: false,
     entities,
-    migrations: [], // isDev ? ['src/migrations/*.ts'] : ['dist/migrations/*.js'], // something is bugging out here not sure how to fix
+    migrations: [],
     synchronize: isDev,
     logging: isDev,
   };

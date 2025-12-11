@@ -6,6 +6,7 @@ import { Projects } from '../project/project.entity';
 import { PaginationDto } from './Dto/pagination.dto';
 import { CreateTaskDto } from './Dto/create-task.dto';
 import { Task, TaskStatus } from './task.entity';
+import { UpdateTaskDto } from './Dto/update-task.dto';
 
 @Injectable()
 export class TaskService {
@@ -64,5 +65,30 @@ export class TaskService {
   async delete(id: number) {
     const res = await this.taskRepo.delete(id);
     if (!res.affected) throw new NotFoundException(`Task ${id} not found`);
+  }
+
+  async update(id: number, dto: UpdateTaskDto) {
+    const task = await this.taskRepo.findOne({
+      where: { id },
+      relations: { project: true },
+    });
+    if (!task) throw new NotFoundException(`Task ${id} not found`);
+
+    if (dto.title !== undefined) {
+      task.title = dto.title.trim();
+    }
+    if (dto.status !== undefined) {
+      task.status = dto.status;
+    }
+    if (dto.projectId !== undefined && dto.projectId !== task.project.id) {
+      const project = await this.projRepo.findOne({
+        where: { id: dto.projectId },
+      });
+      if (!project)
+        throw new NotFoundException(`Project ${dto.projectId} not found`);
+      task.project = project;
+    }
+
+    return this.taskRepo.save(task);
   }
 }
