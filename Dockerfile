@@ -1,5 +1,5 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:18-slim AS builder
 
 WORKDIR /app
 
@@ -21,7 +21,7 @@ RUN ls -la dist/ || (echo "Build failed - dist directory not found" && exit 1)
 RUN test -f dist/main.js || (echo "Build failed - dist/main.js not found" && exit 1)
 
 # Production stage
-FROM node:18-alpine
+FROM node:18-slim
 
 WORKDIR /app
 
