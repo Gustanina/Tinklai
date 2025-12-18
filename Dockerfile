@@ -16,7 +16,7 @@ COPY nest-cli.json ./
 COPY src ./src
 
 # Build the application and verify dist exists
-RUN npm run build && ls -la dist/ && ls -la dist/main.js || (echo "Build failed - dist/main.js not found" && exit 1)
+RUN npm run build && ls -la dist/src/ && ls -la dist/src/main.js || (echo "Build failed - dist/src/main.js not found" && exit 1)
 
 # Remove devDependencies after build to reduce image size
 RUN npm prune --production
@@ -25,8 +25,8 @@ RUN npm prune --production
 EXPOSE 3000
 
 # Verify dist exists before starting
-RUN test -f dist/main.js || (echo "ERROR: dist/main.js not found!" && exit 1)
+RUN test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found!" && exit 1)
 
 # Start the application
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
 
