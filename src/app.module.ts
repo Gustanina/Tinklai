@@ -15,28 +15,22 @@ import { UserModule } from './modules/user/user.module';
     ConfigModule.forRoot({
       validationSchema: Joi.object({
         // Database - either DATABASE_URL or individual variables
+        // Support both POSTGRES_* and PG* (Railway default) naming
         DATABASE_URL: Joi.string().optional(),
-        POSTGRES_USER: Joi.string().when('DATABASE_URL', {
-          is: Joi.exist(),
-          then: Joi.optional(),
-          otherwise: Joi.required(),
-        }),
-        POSTGRES_PASSWORD: Joi.string().when('DATABASE_URL', {
-          is: Joi.exist(),
-          then: Joi.optional(),
-          otherwise: Joi.required(),
-        }),
-        POSTGRES_HOST: Joi.string().when('DATABASE_URL', {
-          is: Joi.exist(),
-          then: Joi.optional(),
-          otherwise: Joi.required(),
-        }),
-        POSTGRES_PORT: Joi.number().when('DATABASE_URL', {
-          is: Joi.exist(),
-          then: Joi.optional(),
-          otherwise: Joi.required(),
-        }),
+        // POSTGRES_* variables
+        POSTGRES_USER: Joi.string().optional(),
+        POSTGRES_PASSWORD: Joi.string().optional(),
+        POSTGRES_HOST: Joi.string().optional(),
+        POSTGRES_PORT: Joi.number().optional(),
         POSTGRES_DB: Joi.string().optional(),
+        // PG* variables (Railway default)
+        PGUSER: Joi.string().optional(),
+        PGPASSWORD: Joi.string().optional(),
+        PGHOST: Joi.string().optional(),
+        PGPORT: Joi.number().optional(),
+        PGDATABASE: Joi.string().optional(),
+        // At least one set of database variables must be provided
+      }).or('DATABASE_URL', 'POSTGRES_HOST', 'PGHOST'),
         NODE_ENV: Joi.string().default('dev'),
         JWT_SECRET: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),

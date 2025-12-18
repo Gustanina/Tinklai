@@ -40,20 +40,46 @@ export const createTypeOrmOptions = (
   }
   
   // Fallback to individual environment variables
+  // Support both POSTGRES_* and PG* (Railway default) naming
+  const host =
+    configService?.get<string>('POSTGRES_HOST') ??
+    process.env.POSTGRES_HOST ??
+    configService?.get<string>('PGHOST') ??
+    process.env.PGHOST;
+  
+  const port = Number(
+    configService?.get<number>('POSTGRES_PORT') ??
+    process.env.POSTGRES_PORT ??
+    configService?.get<number>('PGPORT') ??
+    process.env.PGPORT ??
+    5432,
+  );
+  
+  const username =
+    configService?.get<string>('POSTGRES_USER') ??
+    process.env.POSTGRES_USER ??
+    configService?.get<string>('PGUSER') ??
+    process.env.PGUSER;
+  
+  const password =
+    configService?.get<string>('POSTGRES_PASSWORD') ??
+    process.env.POSTGRES_PASSWORD ??
+    configService?.get<string>('PGPASSWORD') ??
+    process.env.PGPASSWORD;
+  
+  const database =
+    configService?.get<string>('POSTGRES_DB') ??
+    process.env.POSTGRES_DB ??
+    configService?.get<string>('PGDATABASE') ??
+    process.env.PGDATABASE;
+
   return {
     type: 'postgres',
-    host:
-      configService?.get<string>('POSTGRES_HOST') ?? process.env.POSTGRES_HOST,
-    port: Number(
-      configService?.get<number>('POSTGRES_PORT') ?? process.env.POSTGRES_PORT,
-    ),
-    username:
-      configService?.get<string>('POSTGRES_USER') ?? process.env.POSTGRES_USER,
-    password:
-      configService?.get<string>('POSTGRES_PASSWORD') ??
-      process.env.POSTGRES_PASSWORD,
-    database:
-      configService?.get<string>('POSTGRES_DB') ?? process.env.POSTGRES_DB,
+    host,
+    port,
+    username,
+    password,
+    database,
     ssl: isDev ? false : { rejectUnauthorized: false },
     entities,
     migrations: [],
