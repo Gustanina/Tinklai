@@ -51,6 +51,10 @@ export class UserService {
     });
   }
 
+  async getUserCount(): Promise<number> {
+    return this.userRepo.count();
+  }
+
   async updateRole(userId: number, newRole: UserRole): Promise<User> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) {
@@ -59,6 +63,13 @@ export class UserService {
 
     user.role = newRole;
     return this.userRepo.save(user);
+  }
+
+  async delete(userId: number): Promise<void> {
+    const result = await this.userRepo.delete(userId);
+    if (!result.affected) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
   }
 }
 

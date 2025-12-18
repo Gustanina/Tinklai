@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   HttpCode,
@@ -68,6 +69,17 @@ export class UserController {
     // Remove password from response
     const { password, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.ADMIN)
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete user (Admin only)' })
+  @ApiOkResponse({ description: 'User deleted successfully' })
+  @ApiNotFoundResponse({ description: 'User not found' })
+  @ApiForbiddenResponse({ description: 'Only ADMIN can delete users' })
+  async delete(@Param('id') id: string) {
+    await this.userService.delete(Number(id));
   }
 }
 

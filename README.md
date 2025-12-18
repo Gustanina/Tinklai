@@ -1,6 +1,8 @@
-# Reader Backend API
+# Reader Project Management System
 
-REST API sistema projektų, užduočių ir komentarų valdymui. Sukurta su NestJS, TypeScript ir PostgreSQL.
+Pilna full-stack aplikacija projektų, užduočių ir komentarų valdymui. 
+- **Backend**: REST API su NestJS, TypeScript ir PostgreSQL
+- **Frontend**: Modern React + TypeScript aplikacija su responsive dizainu
 
 ## 📋 Projekto aprašymas
 

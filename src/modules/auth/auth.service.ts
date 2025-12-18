@@ -19,11 +19,36 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
+    // Check if this is the first user - make them ADMIN
+    const userCount = await this.userService.getUserCount();
+    const initialRole = userCount === 0 ? UserRole.ADMIN : UserRole.GUEST;
+
     const user = await this.userService.create(
       dto.email,
       dto.username,
       dto.password,
-      UserRole.GUEST, // Default role
+      initialRole,
+    );
+
+    const tokens = await this.generateTokens(user);
+    return {
+      ...tokens,
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        role: user.role,
+      },
+    };
+  }
+
+  async createAdmin(dto: RegisterDto) {
+    // Create user with ADMIN role directly
+    const user = await this.userService.create(
+      dto.email,
+      dto.username,
+      dto.password,
+      UserRole.ADMIN,
     );
 
     const tokens = await this.generateTokens(user);

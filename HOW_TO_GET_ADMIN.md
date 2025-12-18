@@ -2,7 +2,52 @@
 
 Yra keletas būdų gauti ADMIN rolę. Pasirinkite patogiausią jums.
 
-## Būdas 1: Per PostgreSQL duomenų bazę (Greičiausias)
+## ⚡ Būdas 1: Automatinis script'as (PAPRASČIAUSIAS!)
+
+**Naujausias ir paprasčiausias būdas!** Tiesiog paleiskite script'ą:
+
+### PowerShell:
+
+```powershell
+# Naudojant numatytuosius parametrus
+.\create-admin.ps1
+
+# Arba su savo duomenimis
+.\create-admin.ps1 -Email "your@email.com" -Username "yourname" -Password "yourpassword"
+```
+
+### cURL (jei naudojate Linux/Mac):
+
+```bash
+curl -X POST http://localhost:3000/auth/create-admin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "admin@example.com",
+    "username": "admin",
+    "password": "admin123"
+  }'
+```
+
+### Swagger UI:
+
+1. Eikite į: http://localhost:3000/api
+2. Raskite `POST /auth/create-admin` endpoint'ą
+3. Spauskite "Try it out"
+4. Įveskite duomenis ir spauskite "Execute"
+
+**Svarbu:** Šis endpoint'as veikia tik kai `NODE_ENV=dev` (development režime).
+
+---
+
+## Būdas 2: Pirmasis registruotas vartotojas automatiškai gauna ADMIN
+
+Jei duomenų bazėje nėra jokių vartotojų, pirmasis registruotas vartotojas automatiškai gauna ADMIN rolę!
+
+Tiesiog registruokitės per frontend arba API - jei esate pirmasis, automatiškai tapsite ADMIN.
+
+---
+
+## Būdas 3: Per PostgreSQL duomenų bazę
 
 Jei jau turite registruotą naudotoją, galite tiesiogiai pakeisti jo rolę duomenų bazėje.
 
@@ -41,7 +86,7 @@ Dabar kai prisijungsite su tuo pačiu email/password, gausite ADMIN rolę ir gal
 
 ---
 
-## Būdas 2: Sukurti naują ADMIN naudotoją per duomenų bazę
+## Būdas 4: Sukurti naują ADMIN naudotoją per duomenų bazę
 
 Jei norite sukurti visiškai naują ADMIN naudotoją:
 
@@ -66,7 +111,7 @@ VALUES (
 
 ---
 
-## Būdas 3: Per API (jei jau turite ADMIN naudotoją)
+## Būdas 5: Per API (jei jau turite ADMIN naudotoją)
 
 Jei jau turite vieną ADMIN naudotoją, galite keisti kitų naudotojų roles per API:
 
@@ -118,7 +163,7 @@ curl -X PATCH http://localhost:3000/users/1/role \
 
 ---
 
-## Būdas 4: Sukurti seed scriptą (Rekomenduojama)
+## Būdas 6: Sukurti seed scriptą
 
 Galiu sukurti automatinį scriptą, kuris sukurs pirmąjį ADMIN naudotoją. Ar norite, kad sukursiu?
 
@@ -144,8 +189,14 @@ Jei matote `"role": "ADMIN"`, viskas veikia!
 
 ## Rekomendacija
 
-**Greičiausias būdas:** Būdas 1 (per duomenų bazę)
-1. Registruokitės per API (gausite GUEST rolę)
-2. Pakeiskite rolę per PostgreSQL į ADMIN
-3. Prisijunkite iš naujo - dabar turėsite ADMIN rolę
+**PAPRASČIAUSIAS būdas:** Būdas 1 (automatinis script'as)
+- Tiesiog paleiskite `.\create-admin.ps1` - viskas!
+
+**Jei jau turite vartotoją:** Būdas 3 (per duomenų bazę)
+1. Prisijunkite prie PostgreSQL
+2. Pakeiskite rolę: `UPDATE users SET role = 'ADMIN' WHERE email = 'your@email.com';`
+3. Prisijunkite iš naujo
+
+**Jei duomenų bazė tuščia:** Būdas 2 (pirmasis registruotas)
+- Tiesiog registruokitės - automatiškai tapsite ADMIN!
 
