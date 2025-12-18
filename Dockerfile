@@ -10,11 +10,13 @@ COPY package*.json ./
 # Install all dependencies (including devDependencies for build)
 RUN npm ci && npm cache clean --force
 
-# Copy source code
-COPY . .
+# Copy source code and config files
+COPY tsconfig*.json ./
+COPY nest-cli.json ./
+COPY src ./src
 
-# Build the application
-RUN npm run build
+# Build the application and verify dist exists
+RUN npm run build && ls -la dist/ && ls -la dist/main.js || (echo "Build failed - dist/main.js not found" && exit 1)
 
 # Remove devDependencies after build to reduce image size
 RUN npm prune --production
@@ -22,6 +24,9 @@ RUN npm prune --production
 # Expose port
 EXPOSE 3000
 
+# Verify dist exists before starting
+RUN test -f dist/main.js || (echo "ERROR: dist/main.js not found!" && exit 1)
+
 # Start the application
-CMD ["npm", "run", "start:prod"]
+CMD ["node", "dist/main.js"]
 
