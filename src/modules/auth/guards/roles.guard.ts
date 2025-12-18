@@ -9,6 +9,14 @@ export class RolesGuard implements CanActivate {
   constructor(private reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const path = request.url;
+    
+    // Praleisti Swagger UI endpoint'us be autentifikacijos
+    if (path?.startsWith('/api') || path === '/api-json' || path === '/api-yaml') {
+      return true;
+    }
+    
     // Jei endpointas yra public, praleisti roles tikrinimą
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),

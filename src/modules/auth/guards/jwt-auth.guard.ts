@@ -10,6 +10,14 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   canActivate(context: ExecutionContext) {
+    const request = context.switchToHttp().getRequest();
+    const path = request.url;
+    
+    // Praleisti Swagger UI endpoint'us be autentifikacijos
+    if (path?.startsWith('/api') || path === '/api-json' || path === '/api-yaml') {
+      return true;
+    }
+    
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
