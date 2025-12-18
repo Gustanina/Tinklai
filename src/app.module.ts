@@ -29,14 +29,13 @@ import { UserModule } from './modules/user/user.module';
         PGHOST: Joi.string().optional(),
         PGPORT: Joi.number().optional(),
         PGDATABASE: Joi.string().optional(),
-        // At least one set of database variables must be provided
-      }).or('DATABASE_URL', 'POSTGRES_HOST', 'PGHOST'),
         NODE_ENV: Joi.string().default('dev'),
         JWT_SECRET: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().default('15m'),
         JWT_REFRESH_EXPIRES_IN: Joi.string().default('7d'),
-      }),
+        // At least one set of database variables must be provided
+      }).or('DATABASE_URL', 'POSTGRES_HOST', 'PGHOST'),
       isGlobal: true,
     }),
     DatabaseModule,
