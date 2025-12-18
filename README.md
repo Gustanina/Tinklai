@@ -44,6 +44,12 @@ POSTGRES_USER=admin
 POSTGRES_PASSWORD=root
 POSTGRES_DB=reader-backend
 POSTGRES_PORT=5432
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-this-in-production
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
 ```
 
 ### 3. Paleisti PostgreSQL duomenų bazę
@@ -109,6 +115,199 @@ Aplikacija bus prieinama adresu: `http://localhost:3000`
 
 **Iš viso: 16 API metodų**
 
+### Users (Naudotojai)
+
+| Metodas | Endpoint | Aprašymas | Reikalinga rolė | Status kodai |
+|---------|----------|-----------|-----------------|--------------|
+| GET | `/users` | Gauti visų naudotojų sąrašą | ADMIN | 200, 403 |
+| GET | `/users/me` | Gauti savo naudotojo profilį | GUEST, MEMBER, ADMIN | 200, 401 |
+| PATCH | `/users/:id/role` | Pakeisti naudotojo rolę | ADMIN | 200, 404, 403 |
+
+**Pastaba:** Rolės keitimas prieinamas tik ADMIN naudotojams.
+
+### Auth (Autentifikacija)
+
+| Metodas | Endpoint | Aprašymas | Status kodai |
+|---------|----------|-----------|--------------|
+| POST | `/auth/register` | Registruoti naują naudotoją | 201, 400, 409 |
+| POST | `/auth/login` | Prisijungti | 200, 401 |
+| POST | `/auth/refresh` | Atnaujinti access token | 200, 401 |
+
+**Pastaba:** Visi kiti endpointai reikalauja JWT autentifikacijos (Bearer token).
+
+## 🔐 Autentifikacija ir Autorizacija
+
+Projektas naudoja **JWT (JSON Web Tokens)** autentifikaciją su refresh token strategija.
+
+### Rolės
+
+Sistema turi 3 rolių lygius:
+
+- **GUEST** - Gali tik peržiūrėti duomenis (GET metodai)
+- **MEMBER** - Gali kurti ir redaguoti (GET, POST, PATCH metodai)
+- **ADMIN** - Pilnas prieiga (visi metodai, įskaitant DELETE)
+
+### Kaip naudotis JWT
+
+#### 1. Registracija
+
+```bash
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "username": "John Doe",
+  "password": "password123"
+}
+```
+
+**Atsakas:**
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "username": "John Doe",
+    "role": "GUEST"
+  }
+}
+```
+
+#### 2. Prisijungimas
+
+```bash
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Atsakas:** (tas pats kaip registracijoje)
+
+#### 3. Naudojimas su API užklausomis
+
+Pridėkite `Authorization` header su access token:
+
+```bash
+GET http://localhost:3000/projects
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+#### 4. Token atnaujinimas
+
+Kai access token pasibaigia (po 15 min), naudokite refresh token:
+
+```bash
+POST http://localhost:3000/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Atsakas:** Nauji accessToken ir refreshToken
+
+#### 5. Keisti naudotojo rolę (tik ADMIN)
+
+```bash
+PATCH http://localhost:3000/users/:id/role
+Authorization: Bearer ADMIN_ACCESS_TOKEN
+Content-Type: application/json
+
+{
+  "role": "MEMBER"
+}
+```
+
+**Galimos rolės:** `GUEST`, `MEMBER`, `ADMIN`
+
+**Pavyzdys su cURL:**
+```bash
+# Pakeisti naudotojo (ID=1) rolę į MEMBER
+curl -X PATCH http://localhost:3000/users/1/role \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"role":"MEMBER"}'
+```
+
+**Kaip gauti ADMIN rolę:**
+1. Registruokitės kaip paprastas naudotojas (gausite GUEST rolę)
+2. Duomenų bazėje pakeiskite savo naudotojo rolę į ADMIN:
+   ```sql
+   UPDATE users SET role = 'ADMIN' WHERE email = 'your@email.com';
+   ```
+3. Prisijunkite iš naujo ir gausite ADMIN token
+4. Dabar galite keisti kitų naudotojų roles per API
+
+**Arba naudokite GET /users endpointą (tik ADMIN):**
+```bash
+# Gauti visų naudotojų sąrašą
+GET http://localhost:3000/users
+Authorization: Bearer ADMIN_ACCESS_TOKEN
+```
+
+### Testavimas su Swagger UI
+
+1. Eikite į http://localhost:3000/api
+2. Spustelėkite **"Authorize"** mygtuką (viršuje dešinėje)
+3. Įveskite: `Bearer YOUR_ACCESS_TOKEN`
+4. Dabar galite testuoti visus endpointus
+
+### Testavimas su cURL
+
+```bash
+# 1. Registracija
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","username":"Test User","password":"password123"}'
+
+# 2. Išsaugokite accessToken iš atsako
+
+# 3. Naudokite token API užklausoms
+curl -X GET http://localhost:3000/projects \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### Testavimas su Postman
+
+1. **Registracija/Login:**
+   - POST `http://localhost:3000/auth/register`
+   - Body: JSON su email, username, password
+   - Išsaugokite `accessToken` iš atsako
+
+2. **Naudojimas:**
+   - Eikite į bet kurį kitą endpoint
+   - Skirtuke "Authorization" pasirinkite "Bearer Token"
+   - Įveskite savo `accessToken`
+   - Dabar galite siųsti užklausas
+
+### Rolės prieigos kontrolė
+
+| Endpoint | GUEST | MEMBER | ADMIN |
+|----------|-------|--------|-------|
+| GET /projects | ✅ | ✅ | ✅ |
+| GET /tasks | ✅ | ✅ | ✅ |
+| GET /comments | ✅ | ✅ | ✅ |
+| POST /projects | ❌ | ✅ | ✅ |
+| POST /tasks | ❌ | ✅ | ✅ |
+| POST /comments | ❌ | ✅ | ✅ |
+| PATCH /projects/:id | ❌ | ✅ | ✅ |
+| PATCH /tasks/:id | ❌ | ✅ | ✅ |
+| PATCH /comments/:id | ❌ | ✅ | ✅ |
+| DELETE /projects/:id | ❌ | ❌ | ✅ |
+| DELETE /tasks/:id | ❌ | ❌ | ✅ |
+| DELETE /comments/:id | ❌ | ❌ | ✅ |
+| GET /users | ❌ | ❌ | ✅ |
+| GET /users/me | ✅ | ✅ | ✅ |
+| PATCH /users/:id/role | ❌ | ❌ | ✅ |
+
 ## 📖 HTTP Status kodai
 
 - **200 OK** - Sėkmingas GET arba PATCH užklausa
@@ -151,6 +350,7 @@ Projektas naudoja **PostgreSQL** su **TypeORM**.
 
 - **Development režime**: `synchronize: true` - lentelės sukūriamos automatiškai
 - **Database schema**:
+  - `users` - naudotojai (su rolėmis)
   - `projects` - projektai
   - `tasks` - užduotys (FK į projects)
   - `comments` - komentarai (FK į tasks)
@@ -192,6 +392,17 @@ npm run lint
 ```
 src/
 ├── modules/
+│   ├── user/             # Naudotojų modulis
+│   │   ├── user.entity.ts
+│   │   ├── user.service.ts
+│   │   └── user.module.ts
+│   ├── auth/             # Autentifikacijos modulis
+│   │   ├── auth.controller.ts
+│   │   ├── auth.service.ts
+│   │   ├── auth.module.ts
+│   │   ├── strategies/   # JWT strategija
+│   │   ├── guards/       # JWT ir Roles guards
+│   │   └── decorators/   # Public, Roles, CurrentUser
 │   ├── project/          # Projekto modulis
 │   │   ├── project.controller.ts
 │   │   ├── project.service.ts
@@ -221,6 +432,9 @@ src/
 - **TypeScript** - Programavimo kalba
 - **TypeORM** - ORM biblioteka
 - **PostgreSQL** - Duomenų bazė
+- **JWT** - Autentifikacija ir autorizacija
+- **Passport** - Autentifikacijos strategijos
+- **bcrypt** - Slaptažodžių šifravimas
 - **Swagger/OpenAPI** - API dokumentacija
 - **class-validator** - Validacija
 - **Docker** - Konteinerizacija
@@ -230,60 +444,12 @@ src/
 Pagrindinės priklausomybės:
 - `@nestjs/core`, `@nestjs/common` - NestJS pagrindai
 - `@nestjs/typeorm`, `typeorm` - TypeORM integracija
+- `@nestjs/jwt`, `@nestjs/passport` - JWT autentifikacija
+- `passport`, `passport-jwt` - Passport JWT strategija
+- `bcrypt` - Slaptažodžių šifravimas
 - `@nestjs/swagger` - Swagger dokumentacija
 - `pg` - PostgreSQL driver
 - `class-validator`, `class-transformer` - Validacija ir transformacija
-
-## ☁️ Deployment į Railway
-
-Projektas paruoštas deployment į Railway platformą.
-
-### Railway Deployment žingsniai:
-
-1. **Sukurkite Railway paskyrą**:
-   - Eikite į https://railway.app
-   - Prisijunkite su GitHub
-
-2. **Sukurkite naują projektą**:
-   - Spauskite "New Project"
-   - Pasirinkite "Deploy from GitHub repo"
-   - Pasirinkite savo `Tinklai` repository
-
-3. **Pridėkite PostgreSQL duomenų bazę**:
-   - Spauskite "+ New"
-   - Pasirinkite "Database" → "Add PostgreSQL"
-   - Railway automatiškai sukurs `DATABASE_URL` environment variable
-
-4. **Konfigūruokite aplinkos kintamuosius** (jei reikia):
-   - Eikite į "Variables" sekciją
-   - Railway automatiškai nustato:
-     - `DATABASE_URL` (iš PostgreSQL)
-     - `PORT` (automatiškai)
-   - Galite pridėti:
-     - `NODE_ENV=production` (optional)
-
-5. **Deploy**:
-   - Railway automatiškai aptiks `Dockerfile` ir `railway.json`
-   - Deployment vyks automatiškai
-   - Po deployment gausite URL: `https://your-app.railway.app`
-
-**Swagger dokumentacija bus prieinama**: `https://your-app.railway.app/api`
-
-### Railway Features:
-
-- ✅ Automatinis deployment iš GitHub
-- ✅ Automatinis PostgreSQL setup su `DATABASE_URL`
-- ✅ Free tier: $5/mėn. kreditai (~100 val. runtime)
-- ✅ SSL sertifikatai automatiškai
-- ✅ Custom domains
-
-### Deployment patikrinimas:
-
-1. **Health check**: `GET https://your-app.railway.app/`
-2. **Swagger UI**: `https://your-app.railway.app/api`
-3. **Test API**: Naudokite Postman su production URL
-
----
 
 ## 🐛 Troubleshooting
 
@@ -299,6 +465,22 @@ Jei matote klaidą `Unable to connect to the database`:
 Jei portas 3000 užimtas:
 - Pakeiskite `PORT` kintamąjį `.env` faile
 - Arba sustabdykite kitą aplikaciją, naudojančią tą patį portą
+
+### JWT Authentication errors
+
+Jei gaunate `401 Unauthorized` klaidas:
+1. Patikrinkite, ar `.env` faile yra nustatyti `JWT_SECRET` ir `JWT_REFRESH_SECRET`
+2. Įsitikinkite, kad naudojate teisingą `Bearer` token formatą: `Authorization: Bearer YOUR_TOKEN`
+3. Patikrinkite, ar token nėra pasibaigęs (access token galioja 15 min)
+4. Jei token pasibaigė, naudokite `/auth/refresh` endpointą su refresh token
+
+### Role-based access errors
+
+Jei gaunate `403 Forbidden` klaidas:
+- Patikrinkite, ar jūsų naudotojo rolė turi prieigą prie šio endpointo
+- GUEST gali tik peržiūrėti (GET)
+- MEMBER gali kurti ir redaguoti (POST, PATCH)
+- ADMIN turi pilną prieigą (visi metodai)
 
 ## 📄 Licencija
 

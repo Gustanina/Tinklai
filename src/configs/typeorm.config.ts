@@ -5,48 +5,35 @@ import { config } from 'dotenv';
 import { Projects } from 'src/modules/project/project.entity';
 import { Task } from 'src/modules/task/task.entity';
 import { Comment } from 'src/modules/comment/comment.entity';
+import { User } from 'src/modules/user/user.entity';
 
 // Load .env if not running in NestJS context
 config();
 
-const entities = [Projects, Task, Comment];
+const entities = [Projects, Task, Comment, User];
 
 export const createTypeOrmOptions = (
   configService?: ConfigService,
 ): DataSourceOptions => {
   const isDev =
     (configService?.get<string>('NODE_ENV') ?? process.env.NODE_ENV) === 'dev';
-  const isProd =
-    (configService?.get<string>('NODE_ENV') ?? process.env.NODE_ENV) ===
-    'production';
-
-  // Support DATABASE_URL (used by Railway, Render, Heroku, etc.)
-  const databaseUrl =
-    configService?.get<string>('DATABASE_URL') ?? process.env.DATABASE_URL;
-
-  // If DATABASE_URL is provided, parse it (Railway provides this)
-  if (databaseUrl) {
-    const url = new URL(databaseUrl);
-    return {
-      type: 'postgres',
-      host: url.hostname,
-      port: parseInt(url.port, 10) || 5432,
-      username: url.username,
-      password: url.password,
-      database: url.pathname.slice(1), // Remove leading '/'
-      ssl: isProd
-        ? {
-            rejectUnauthorized: false,
-          }
-        : false,
-      entities,
-      migrations: [],
-      synchronize: isDev, // false in production, but Railway can use true for simplicity
-      logging: isDev,
-    };
-  }
-
-  // Otherwise use individual environment variables (for local development)
+  console.log(
+    'password',
+    configService?.get<string>('POSTGRES_PASSWORD') ??
+      process.env.POSTGRES_PASSWORD,
+  );
+  console.log(
+    'user',
+    configService?.get<string>('POSTGRES_USER') ?? process.env.POSTGRES_USER,
+  );
+  console.log(
+    'host',
+    configService?.get<string>('POSTGRES_HOST') ?? process.env.POSTGRES_HOST,
+  );
+  console.log(
+    'port',
+    configService?.get<number>('POSTGRES_PORT') ?? process.env.POSTGRES_PORT,
+  );
   return {
     type: 'postgres',
     host:
@@ -63,7 +50,7 @@ export const createTypeOrmOptions = (
       configService?.get<string>('POSTGRES_DB') ?? process.env.POSTGRES_DB,
     ssl: false,
     entities,
-    migrations: [],
+    migrations: [], // isDev ? ['src/migrations/*.ts'] : ['dist/migrations/*.js'], // something is bugging out here not sure how to fix
     synchronize: isDev,
     logging: isDev,
   };

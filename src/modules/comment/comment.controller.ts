@@ -18,19 +18,24 @@ import {
   ApiOperation,
   ApiNoContentResponse,
   ApiTags,
+  ApiBearerAuth,
 } from '@nestjs/swagger';
 import { CreateCommentDto } from './Dto/create-comment.dto';
 import { UpdateCommentDto } from './Dto/update-comment.dto';
 import { ListCommentsQueryDto } from './Dto/list-comments.query';
 import { CommentService } from './comment.service';
 import { Comment } from './comment.entity';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '../user/user.entity';
 
 @ApiTags('comments')
+@ApiBearerAuth('JWT-auth')
 @Controller('comments')
 export class CommentController {
   constructor(private readonly service: CommentService) {}
 
   @Post()
+  @Roles(UserRole.MEMBER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Create a new comment for a task' })
   @ApiCreatedResponse({
     description: 'Comment created successfully.',
@@ -43,6 +48,7 @@ export class CommentController {
   }
 
   @Get()
+  @Roles(UserRole.GUEST, UserRole.MEMBER, UserRole.ADMIN)
   @ApiOperation({
     summary: 'List comments (optional taskId filter)',
     description:
@@ -50,8 +56,6 @@ export class CommentController {
   })
   @ApiOkResponse({
     description: 'Comments returned successfully.',
-    // Note: if your service returns { data, meta }, this type is indicative.
-    // Keep as [Comment] for simplicity in Swagger, or introduce a wrapper DTO.
     type: [Comment],
   })
   @ApiBadRequestResponse({ description: 'Invalid query parameters.' })
@@ -60,6 +64,7 @@ export class CommentController {
   }
 
   @Get(':id')
+  @Roles(UserRole.GUEST, UserRole.MEMBER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get a single comment by ID' })
   @ApiOkResponse({ description: 'Comment found.', type: Comment })
   @ApiNotFoundResponse({ description: 'Comment not found.' })
@@ -68,6 +73,7 @@ export class CommentController {
   }
 
   @Patch(':id')
+  @Roles(UserRole.MEMBER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Update a comment' })
   @ApiOkResponse({
     description: 'Comment updated successfully.',
@@ -80,6 +86,7 @@ export class CommentController {
   }
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN)
   @ApiOperation({ summary: 'Delete a comment by ID' })
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiNoContentResponse({ description: 'Comment deleted successfully.' })

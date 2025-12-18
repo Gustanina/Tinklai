@@ -1,6 +1,238 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/": {
+      "get": {
+        "operationId": "AppController_getHello",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "API is running"
+          }
+        },
+        "summary": "Health check endpoint",
+        "tags": [
+          "App"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "UserController_findAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/User"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only ADMIN can access this endpoint"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get all users (Admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/me": {
+      "get": {
+        "operationId": "UserController_getMe",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Get current user profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{id}/role": {
+      "patch": {
+        "operationId": "UserController_updateRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Only ADMIN can change user roles"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
+        "summary": "Update user role (Admin only)",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "operationId": "AuthController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid input or user already exists"
+          }
+        },
+        "summary": "Register a new user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "AuthController_login",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        },
+        "summary": "Login user",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "AuthController_refresh",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshTokenDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid refresh token"
+          }
+        },
+        "summary": "Refresh access token",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/projects": {
       "post": {
         "operationId": "ProjectController_create",
@@ -27,6 +259,11 @@
             }
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Create project",
         "tags": [
           "projects"
@@ -60,6 +297,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "List projects",
         "tags": [
           "projects"
@@ -94,6 +336,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Get project by id",
         "tags": [
           "projects"
@@ -136,6 +383,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Update project",
         "tags": [
           "projects"
@@ -158,6 +410,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Delete project",
         "tags": [
           "projects"
@@ -190,6 +447,11 @@
             }
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Create task (attach to project)",
         "tags": [
           "tasks"
@@ -233,6 +495,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "List tasks (pagination + optional projectId)",
         "tags": [
           "tasks"
@@ -274,6 +541,11 @@
             }
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Update task status",
         "tags": [
           "tasks"
@@ -308,6 +580,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Get task by id",
         "tags": [
           "tasks"
@@ -330,6 +607,11 @@
             "description": ""
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Delete task",
         "tags": [
           "tasks"
@@ -369,6 +651,11 @@
             }
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Update task (title / status / projectId)",
         "tags": [
           "tasks"
@@ -407,6 +694,11 @@
             "description": "Task not found."
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Create a new comment for a task",
         "tags": [
           "comments"
@@ -464,6 +756,11 @@
             "description": "Invalid query parameters."
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "List comments (optional taskId filter)",
         "tags": [
           "comments"
@@ -498,6 +795,11 @@
             "description": "Comment not found."
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Get a single comment by ID",
         "tags": [
           "comments"
@@ -543,6 +845,11 @@
             "description": "Comment not found."
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Update a comment",
         "tags": [
           "comments"
@@ -568,6 +875,11 @@
             "description": "Comment not found."
           }
         },
+        "security": [
+          {
+            "JWT-auth": []
+          }
+        ],
         "summary": "Delete a comment by ID",
         "tags": [
           "comments"
@@ -576,15 +888,155 @@
     }
   },
   "info": {
-    "title": "My API",
-    "description": "API documentation for 'Reader'",
+    "title": "Reader Backend API",
+    "description": "API documentation for 'Reader' - Project Management System",
     "version": "1.0",
     "contact": {}
   },
   "tags": [],
   "servers": [],
   "components": {
+    "securitySchemes": {
+      "JWT-auth": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "name": "JWT",
+        "description": "Enter JWT token",
+        "in": "header"
+      }
+    },
     "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "username": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "GUEST",
+              "MEMBER",
+              "ADMIN"
+            ],
+            "default": "GUEST"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "username",
+          "role",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "UpdateRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "GUEST",
+              "MEMBER",
+              "ADMIN"
+            ],
+            "example": "MEMBER"
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "RegisterDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "username": {
+            "type": "string",
+            "example": "John Doe"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "email",
+          "username",
+          "password"
+        ]
+      },
+      "AuthResponseDto": {
+        "type": "object",
+        "properties": {
+          "accessToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          },
+          "user": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken",
+          "user"
+        ]
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "password123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        },
+        "required": [
+          "refreshToken"
+        ]
+      },
       "CreateProjectDto": {
         "type": "object",
         "properties": {
