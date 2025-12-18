@@ -31,6 +31,7 @@ async function bootstrap() {
       'http://localhost:5173', // Local frontend URL
       process.env.FRONTEND_URL, // Frontend URL from env
       'https://beneficial-gentleness-production.up.railway.app', // Frontend Railway URL
+      /\.railway\.app$/, // Allow all Railway domains
     ].filter(Boolean), // Remove undefined values
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

@@ -39,9 +39,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (email: string, username: string, password: string) => {
-    const data = await authService.register({ email, username, password });
-    authService.setAuthData(data);
-    setUser(data.user);
+    try {
+      const data = await authService.register({ email, username, password });
+      authService.setAuthData(data);
+      setUser(data.user);
+    } catch (error: any) {
+      // Re-throw with better error message
+      const errorMessage = error.response?.data?.message || 
+                          error.response?.data?.error || 
+                          error.message || 
+                          'Registration failed. Please try again.';
+      throw new Error(errorMessage);
+    }
   };
 
   const logout = () => {

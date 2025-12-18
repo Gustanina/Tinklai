@@ -1,6 +1,10 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://tinklai-production.up.railway.app';
+// Remove trailing slash from API URL
+const rawApiUrl = import.meta.env.VITE_API_URL || 'https://tinklai-production.up.railway.app';
+const API_URL = rawApiUrl.replace(/\/$/, ''); // Remove trailing slash
+
+console.log('API URL:', API_URL); // Debug log
 
 const api = axios.create({
   baseURL: API_URL,
