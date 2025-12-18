@@ -34,11 +34,11 @@ RUN npm ci --only=production && npm cache clean --force
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
 
-# Verify main.js exists
-RUN test -f dist/src/main.js || (echo "ERROR: dist/src/main.js not found!" && ls -la dist/ && exit 1)
+# Verify main.js exists (check both possible locations)
+RUN (test -f dist/main.js || test -f dist/src/main.js) || (echo "ERROR: main.js not found!" && ls -la dist/ && exit 1)
 
 # Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["node", "dist/src/main.js"]
+# Start the application (try dist/main.js first, then dist/src/main.js)
+CMD ["sh", "-c", "if [ -f dist/main.js ]; then node dist/main.js; else node dist/src/main.js; fi"]
